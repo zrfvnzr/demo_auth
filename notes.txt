@@ -1,0 +1,29 @@
+Frontend
+	Vite Vue3
+		npm create vite@latest
+	cd into frontend folder and npm install
+	configure vite_config.js to build on ../dist
+	create .gitignore
+		add node_modules and frontend/node_modules
+	add start command in root's package.json
+		"start": "node .\\index.js"
+Backend
+	npm install the ff:
+		bcrypt
+		sqlite3
+		express
+		express-session
+		passport
+		passport-local
+		body-parser
+		uuid
+		dotenv
+		connect-history-api-fallback
+		connect-sqlite3
+	create .env
+		add PORT=8000
+	create index.js
+		paste boilerplate
+	create database.js
+	create authentication.js
+		
