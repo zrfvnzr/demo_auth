@@ -1,6 +1,5 @@
 const sqlite3 = require('sqlite3').verbose()
 
-// console.log('database initialized') // temp
 
 // Open/Create Database
 async function openOrCreateDB(source) {

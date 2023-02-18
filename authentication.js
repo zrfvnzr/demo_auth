@@ -8,7 +8,7 @@ const session = require('express-session')
 const SQLiteStore = require('connect-sqlite3')(session)
 const { v4: uuidv4 } = require('uuid');
 
-async function main(app) {
+async function main(app, db) {
   return new Promise(async (resolve, reject) => {
     try {
       app.use(session({
@@ -19,6 +19,8 @@ async function main(app) {
       }))
       app.use(passport.initialize())
       app.use(passport.session())
+      await configureLocalStrategy(db)
+      app.use(router)
       resolve()
     } catch (error) {
       console.log('Error on auth.js > main')
@@ -83,7 +85,7 @@ async function configureLocalStrategy(db) {
 // Routes
 
   // get all users
-  router.post('/api/getAllUsers', adminOnly, async (req, res) => {
+  router.post('/api/getAllUsers', async (req, res) => {
     try {
       const source = './database/db.sqlite'
       const db = await database.openOrCreateDB(source)
@@ -110,7 +112,7 @@ async function configureLocalStrategy(db) {
   // end authorize
 
   // register
-  router.post('/api/register', adminOnly, async (req, res) => {
+  router.post('/api/register', async (req, res) => {
     // check if username already exists
     try {
       const source = './database/db.sqlite'
@@ -170,128 +172,6 @@ async function configureLocalStrategy(db) {
   })
   // end logout redirect
 
-  // edit user
-  router.post('/api/editUser', adminOnly, async (req, res) => {
-    try {
-      if (!req.body.new_role || !req.body.old_username || !req.body.new_username || !req.body.new_password) {
-        throw 'Invalid input'
-      } else {
-        const hashedPassword = bcrypt.hash(req.body.new_password, 10)
-        const source = './database/db.sqlite'
-        const db = await database.openOrCreateDB(source)
-        await database.run(db, `UPDATE user SET role = ?, username = ?, password = ? WHERE username = ?`,
-        [req.body.new_role.toLowerCase(), req.body.new_username, hashedPassword, req.body.old_username], false)
-        res.json({message: `Edit success for ${req.body.old_username}`}).send()
-      }
-    } catch (error) {
-      console.log('Error on /api/editUser') // temp
-      console.log(error) // temp
-      res.json({message: error}).send()
-    }
-  })
-  // end edit user
-
-  // delete user
-  router.post('/api/deleteUser', adminOnly, async (req, res) => {
-    try {
-      if (!req.body.username) {
-        throw 'Invalid request body'
-      } else {
-        const source = './database/db.sqlite'
-        const db = await database.openOrCreateDB(source)
-        await database.run(db, `
-          DELETE FROM user WHERE username = ?
-        `, [req.body.username], false)
-        res.json({message: `Delete success for user ${req.body.username}`}).send()
-      }
-    } catch (error) {
-      console.log('Error on /api/deleteUser') // temp
-      console.log(error) // temp
-      res.json({message: error}).send()
-    }
-  })
-  // end delete user
-
 // end Routes
 
-// middlewares
-function adminOnly(req, res, next) {
-  try {
-    if ((req.user.role !== 'admin') || (!req.user.role)) {
-      res.status(401).json('Not admin.').send()
-    } else {
-      next()
-    }
-  } catch (error) {
-    console.log('Error on auth.js > adminOnly middleware') // temp
-    console.log(error) // temp
-    res.status(401).send()
-  }
-}
-function authorize(req, res, next) {
-  try {
-    // insert routes that you want to protect here
-    if (req.url === '/login') {
-      if (req.user) {
-        if (req.user.role === 'social worker') {
-          res.redirect('/socialworker')
-        } else {
-          res.redirect('/' + req.user.role)
-        }
-      } else {
-        next()
-      }
-    } else if (req.url === '/') {
-      if (!req.user) {
-        res.redirect('/login')
-      } else {
-        next()
-      }
-    } else if (req.url === '/receptionist') {
-      if (req.user.role === 'receptionist') {
-        next()
-      } else {
-        res.redirect('/login')
-      }
-    } else if (req.url === '/socialworker') {
-      if (req.user.role === 'social worker') {
-        next()
-      } else {
-        res.redirect('/login')
-      }
-    } else if (req.url === '/cashier') {
-      if (req.user.role === 'cashier') {
-        next()
-      } else {
-        res.redirect('/login')
-      }
-    } else if (req.url === '/anthropometrics') {
-      if (req.user.role === 'anthropometrics') {
-        next()
-      } else {
-        res.redirect('/login')
-      }
-    } else if (req.url === '/doctor') {
-      if (req.user.role === 'doctor') {
-        next()
-      } else {
-        res.redirect('/login')
-      }
-    } else if (req.url === '/admin') {
-      if (req.user.role === 'admin') {
-        next()
-      } else {
-        res.redirect('/login')
-      }
-    } else {
-      next()
-    }
-  } catch (error) {
-    console.log('Error on auth.js > authorize middlewares')
-    console.log(error)
-    res.redirect('/')
-  }
-}
-// end middlewares
-
-module.exports = {authorize, main, configureLocalStrategy, router}
+module.exports = {main, router}
