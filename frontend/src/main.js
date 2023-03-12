@@ -15,14 +15,16 @@ app.use(VueAxios, axios)
   import Home from './views/Home.vue'
   import Login from './views/Login.vue'
   import Register from './views/Register.vue'
+  import Reset from './views/Reset.vue'
   // end import components
   // define routes
   const routes = [
     // { path: '/', component: Home } // example
     {path: '/', component: Home},
-    {path: '/', component: Forgot},
+    {path: '/forgot', component: Forgot},
     {path: '/login', component: Login},
-    {path: '/register', component: Register}
+    {path: '/register', component: Register},
+    {path: '/reset', component: Reset}
   ]
   // end define routes
   // setup router

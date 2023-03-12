@@ -9,16 +9,18 @@ export default {
   methods: {
     async resetPassword() {
       try {
-        
+        const response = await this.axios.post('/api/forgotPassword', {email: this.email})
+        alert(response.data.message)
+        location.href = '/reset'
       } catch (error) {
-        
+        alert(error.response.data.message)
       }  
     }
   }
 }
 </script>
 <template>
-  <div class="align-items-start d-flex">
+<div class="align-items-start d-flex">
   Forgot Password
   <span>Email</span>
   <input v-model="email" type="text">

@@ -186,21 +186,47 @@ async function configureLocalStrategy(db) {
 
   router.post('/api/forgotPassword', async (req, res) => {
     try {
+      const source = './database/db.sqlite'
+      const db = await database.openOrCreateDB(source)
+      const rows = await database.get(db, `SELECT * FROM user WHERE email = ?`, [req.body.email], true)
+      if (!rows) {
+        throw 'Error'
+      }
+      const token = uuidv4()
+      await database.run(db, `UPDATE user SET forgot_token = ? WHERE email = ?`, [token, req.body.email], false)
       var mailOptions = {
         from: process.env.ZOHO_MAIL,
         to: req.body.email,
         subject: 'Password reset',
-        html: '<b>Hey there! </b><br> Your password is '
+        html: `<b>Hey there! </b><br> Go to /resetPassword and input the token <b>${token}</b>`
       }
       transporter.sendMail(mailOptions, (error, info) => {
         if (error) {
           throw error
         }
         res.json({message: 'Email sent'}).send()
+        throw 'Unkown error'
       })
-      throw 'Unkown error'
     } catch (error) {
       console.log('Error in api > forgotPassword', error)
+      res.status(401).json({message: error}).send()
+    }
+  })
+
+  router.post('/api/resetPassword', async (req, res) => {
+    try {
+      const source = './database/db.sqlite'
+      const db = await database.openOrCreateDB(source)
+      const row = await database.get(db, `SELECT * FROM user WHERE email = ?`, [req.body.email], false)
+      if (row.forgot_token != req.body.token) {
+        throw 'Tokens do not match'
+      } else {
+        const hashedPassword = await bcrypt.hash(req.body.pw, 10) 
+        await database.run(db, `UPDATE user SET forgot_token = ?, password = ? WHERE email = ?`, ['', hashedPassword, req.body.email], false)
+        res.status(200).json({message: 'Password reset success'}).send()
+      }
+    } catch (error) {
+      console.log('Error in api > resetPassword', error)
       res.status(401).json({message: error}).send()
     }
   })
