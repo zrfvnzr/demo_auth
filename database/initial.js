@@ -7,7 +7,7 @@ async function createInitialTables(db) {
   await database.createTable(db, 'user', `
     id TEXT UNIQUE PRIMARY KEY,
     role TEXT,
-    username TEXT UNIQUE,
+    email TEXT UNIQUE,
     password TEXT
   `,)
   // end user table
@@ -19,12 +19,12 @@ async function createInitialRows(db) {
     var hashedPassword = await bcrypt.hash('admin1', 10)
     await database.run(db, `
       INSERT INTO user (
-        id, role, username, password
+        id, role, email, password
       ) VALUES (
         ?, ?, ?, ?
       )
     `, [
-      uuidv4(), 'admin', 'admin1', hashedPassword
+      uuidv4(), 'admin', 'admin@example.com', hashedPassword
     ], true)
     // end admin1
   // end users

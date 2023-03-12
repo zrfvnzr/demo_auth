@@ -34,9 +34,9 @@ async function configureLocalStrategy(db) {
   return new Promise(async (resolve, reject) => {
     try {
     // Local Strategy Configuration
-    passport.use(new LocalStrategy(async function verify(username, password, done) {
+    passport.use(new LocalStrategy({usernameField: 'email', passwordField: 'password', sesssion: true}, async function verify(username, password, done) {
       try {
-        const getUser = 'SELECT * FROM user WHERE username = ?'
+        const getUser = 'SELECT * FROM user WHERE email = ?'
         const source = './database/db.sqlite'
         const db = await database.openOrCreateDB(source)
         const result = await database.get(db, getUser, [username], true)
@@ -90,7 +90,7 @@ async function configureLocalStrategy(db) {
       const source = './database/db.sqlite'
       const db = await database.openOrCreateDB(source)
       const rows = await database.all(db, `
-        SELECT role, username FROM user ORDER BY role ASC
+        SELECT role, email FROM user ORDER BY role ASC
       `, [], false)
       res.send(rows)
     } catch (error) {
@@ -104,7 +104,7 @@ async function configureLocalStrategy(db) {
   // authorize
   router.post('/api/authorize', (req, res) => {
     if (req.user) {
-      res.json({username: req.user.username, role: req.user.role}).send()
+      res.json({email: req.user.email, role: req.user.role}).send()
     } else {
       res.status(401).json({message: 'User not logged in'}).send()
     }
@@ -113,19 +113,19 @@ async function configureLocalStrategy(db) {
 
   // register
   router.post('/api/register', async (req, res) => {
-    // check if username already exists
+    // check if email already exists
     try {
       const source = './database/db.sqlite'
       const db = await database.openOrCreateDB(source)
-      const row = await database.get(db, `SELECT * FROM user WHERE username = ?`, [req.body.username])
+      const row = await database.get(db, `SELECT * FROM user WHERE email = ?`, [req.body.email])
       if (row) {
-        // username already exists
+        // email already exists
         res.status(401).json({message: 'User already exists'}).send()
       } else {
         // insert new user
         const hashedPassword = await bcrypt.hash(req.body.password, 10)
-        const row = await database.run(db, `INSERT INTO user (id, role, username, password) VALUES (?, ?, ?, ?)`, [uuidv4(), req.body.role, req.body.username, hashedPassword])
-        res.json({message: `Register success for user ${req.body.username}`}).send()
+        const row = await database.run(db, `INSERT INTO user (id, role, email, password) VALUES (?, ?, ?, ?)`, [uuidv4(), req.body.role, req.body.email, hashedPassword])
+        res.json({message: `Register success for email ${req.body.email}`}).send()
       }
     } catch (error) {
       res.status(401).json({message: error}).send()
@@ -171,6 +171,40 @@ async function configureLocalStrategy(db) {
     res.redirect('/login?loggedOut=1')
   })
   // end logout redirect
+
+  // password reset
+  const nodemailer = require('nodemailer')
+  let transporter = nodemailer.createTransport({
+    host: 'smtp.zoho.com',
+    port: 465,
+    secure: true,
+    auth: {
+        user: process.env.ZOHO_MAIL,
+        pass: process.env.ZOHO_PASS
+    }
+  });
+
+  router.post('/api/forgotPassword', async (req, res) => {
+    try {
+      var mailOptions = {
+        from: process.env.ZOHO_MAIL,
+        to: req.body.email,
+        subject: 'Password reset',
+        html: '<b>Hey there! </b><br> Your password is '
+      }
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          throw error
+        }
+        res.json({message: 'Email sent'}).send()
+      })
+      throw 'Unkown error'
+    } catch (error) {
+      console.log('Error in api > forgotPassword', error)
+      res.status(401).json({message: error}).send()
+    }
+  })
+  // end password reset
 
 // end Routes
 

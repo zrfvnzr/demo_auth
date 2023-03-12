@@ -11,6 +11,7 @@ app.use(VueAxios, axios)
 
 // Vue router setup
   // import compoonents
+  import Forgot from './views/Forgot.vue'
   import Home from './views/Home.vue'
   import Login from './views/Login.vue'
   import Register from './views/Register.vue'
@@ -19,6 +20,7 @@ app.use(VueAxios, axios)
   const routes = [
     // { path: '/', component: Home } // example
     {path: '/', component: Home},
+    {path: '/', component: Forgot},
     {path: '/login', component: Login},
     {path: '/register', component: Register}
   ]

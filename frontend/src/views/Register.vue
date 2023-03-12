@@ -3,7 +3,7 @@ export default {
   name: 'Register',
   data() {
     return {
-      username: '',
+      email: '',
       password: '',
       role: 'role1'
     }
@@ -19,12 +19,19 @@ export default {
     },
     async doRegister() {
       try {
-        const response = await this.axios.post('/api/register', {username: this.username, password: this.password, role: this.role})
+        if (!this.validateEmail()) {
+          alert('Invalid email')
+          return
+        }
+        const response = await this.axios.post('/api/register', {email: this.email, password: this.password, role: this.role})
         this.$router.push('/')
       } catch (error) {
         alert(error.response.data.message)
         console.log('Error on Register.vue > doRegister()', error.response.data.message)
       }
+    },
+    validateEmail() {
+      return (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(this.email))
     }
   },
   async mounted() {
@@ -35,8 +42,8 @@ export default {
 <template>
 <div class="align-items-start d-flex">
   Register View
-  <span>Username</span>
-  <input v-model="username" type="text">
+  <span>Email</span>
+  <input v-model="email" type="email">
   <span>Password</span>
   <input v-model="password" type="password">
   <span>Role</span>
